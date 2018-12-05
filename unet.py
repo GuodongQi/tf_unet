@@ -47,8 +47,7 @@ class UNET:
         x = tf.placeholder(tf.float32, [self.batch_size, self.image_size[0], self.image_size[1], 3])
         y = tf.placeholder(tf.float32, [self.batch_size, self.label_size])
 
-
-        print(23)
+        print(233)
 
 
 if __name__ == '__main__':
