@@ -76,8 +76,8 @@ class UNET:
         train_loss_summary = tf.summary.scalar("train_loss", loss)
         val_loss_summary = tf.summary.scalar("val_loss", loss)
         image_summary = tf.summary.image("image", x)
-        label_summary = tf.summary.tensor_summary("lable", label)
-        pred_summary = tf.summary.tensor_summary("pred", pred)
+        label_summary = tf.summary.text("lable", tf.as_string(label[0:3, :]))
+        pred_summary = tf.summary.text("pred", tf.as_string(pred[0:3, :]))
 
         print("train on {0} samples, val on {1} samples".format(len(self.train_set), len(self.val_set)))
 
@@ -102,20 +102,20 @@ class UNET:
             for j in range(batch_val):
                 val_set, val_label = self.load_data(train_set=self.val_set)
                 val_set = tf_read_image(val_set, sess=self.sess)
-                val_loss, val_loss_summ, image_summ, label_summ, pred_summary = self.sess.run(
+                val_loss, val_loss_summ, image_summ, label_summ, pred_summ = self.sess.run(
                     [loss, val_loss_summary, image_summary, label_summary, pred_summary],
                     feed_dict={x: val_set, label: val_label})
                 val_sum_loss += val_loss
             print("Batch  {0}/{1}: train_loss:{2:.8f}  val_loss:{3:.8f}  ".format(batch_train, batch_train, loss_,
                                                                                   val_sum_loss / batch_val), end='\n')
             writer.add_summary(val_loss_summ, i)
-            # writer.add_summary(image_summ)
-            # writer.add_summary(label_summ)
+            writer.add_summary(image_summ)
+            writer.add_summary(label_summ)
+            writer.add_summary(pred_summ)
 
-            if i % 5 == 4:
+            if i % 5 == 4:  # save model every 5 epochs
                 saver.save(self.sess,
-                           "./model/train_loss_{0:.3f}_val_loss_{1:.3f}".format(loss_, val_sum_loss / batch_val),
-                           i, latest_filename="final_weight")
+                           "./model/train_loss_{0:.3f}_val_loss_{1:.3f}".format(loss_, val_sum_loss / batch_val), i)
 
 
 if __name__ == '__main__':
