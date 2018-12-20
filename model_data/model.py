@@ -27,7 +27,6 @@ def conv_block(inputs, filters_unm, kernels, strides, use_bias):
 
 def deconv_block(inputs, filters_unm, kernels, strides):
     """
-    :param use_bias:
     :param inputs: shape=[batch_size,w,h,c]
     :param filters_unm: int
     :param kernels: w*h
@@ -75,44 +74,44 @@ def u_net(input_data):
     u_net net realize, input_size batch_size*80*320*3
     """
     with tf.name_scope("encoder"):
-        down1 = down_block(input_data, filters_num=32, block_num=1)
-        down2 = down_block(down1, filters_num=64, block_num=2)
-        down3 = down_block(down2, filters_num=128, block_num=3)
-        down4 = down_block(down3, filters_num=256, block_num=4)
+        down1 = down_block(input_data, filters_num=64, block_num=1)
+        down2 = down_block(down1, filters_num=128, block_num=2)
+        down3 = down_block(down2, filters_num=256, block_num=3)
+        down4 = down_block(down3, filters_num=512, block_num=4)
 
     with tf.name_scope("feature_map"):
-        x = conv_block(down4, filters_unm=512, kernels=(3, 3), strides=(1, 1), use_bias=False)
-        final = conv_block(x, filters_unm=512, kernels=(3, 3), strides=(1, 1), use_bias=False)
+        x = conv_block(down4, filters_unm=1024, kernels=(3, 3), strides=(1, 1), use_bias=False)
+        final = conv_block(x, filters_unm=1024, kernels=(3, 3), strides=(1, 1), use_bias=False)
 
     with tf.name_scope("decoder"):
-        up4 = up_block(final, filters_num=256, block_num=4)
+        up4 = up_block(final, filters_num=512, block_num=4)
         up4 = tf.concat([up4, down3], 3)
 
-        up3 = up_block(up4, filters_num=128, block_num=3)
+        up3 = up_block(up4, filters_num=256, block_num=3)
         up3 = tf.concat([up3, down2], 3)
 
-        up2 = up_block(up3, filters_num=64, block_num=2)
+        up2 = up_block(up3, filters_num=128, block_num=2)
         up2 = tf.concat([up2, down1], 3)
 
-        up1 = up_block(up2, filters_num=32, block_num=1)
-        up1 = tf.concat([up1, input_data], 3)  # shape = batch_size * 80 * 320 * 35
+        up1 = up_block(up2, filters_num=64, block_num=1)
+        up1 = tf.concat([up1, input_data], 3)  # shape = batch_size * 80 * 416 *
 
-        x = conv_block(up1, filters_unm=16, kernels=(3, 3), strides=(1, 1),
-                       use_bias=False)  # shape = batch_size * 80 * 320 * 16
+        x = conv_block(up1, filters_unm=32, kernels=(3, 3), strides=(1, 1),
+                       use_bias=False)  # shape = batch_size * 80 * 416 *
 
     with tf.name_scope("head"):
-        x = conv_block(x, filters_unm=16, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*40*160*16
-        x = conv_block(x, filters_unm=32, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*20*80*32
-        x = conv_block(x, filters_unm=64, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*10*40*64
-        x = conv_block(x, filters_unm=128, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*5*20*128
-        x = tf.concat([final, x], 3)  # batch_size*5*20*(128+512)
+        x = conv_block(x, filters_unm=32, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*40*？*16
+        x = conv_block(x, filters_unm=64, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*20*？*32
+        x = conv_block(x, filters_unm=128, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*10*？*64
+        x = conv_block(x, filters_unm=256, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*5*？*128
+        x = tf.concat([final, x], 3)  # batch_size*5*？*(256+512)
 
     with tf.name_scope("fc"):
         x = tf.layers.conv2d(x, filters=1, kernel_size=(5, 1), strides=(1, 1), padding='valid',
-                             use_bias=False)  # batch*1 * 20 * 1
+                             use_bias=False)  # batch*1 * 26 * 1
 
         # x = tf.reshape(x, (x.shape[0], x.shape[2]))
-        # x = tf.nn.sigmoid(x)
+        x = tf.nn.sigmoid(x)
         x = x[:, 0, :, 0]
         return x
 

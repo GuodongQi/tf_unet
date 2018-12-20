@@ -2,9 +2,10 @@
 
 import tensorflow as tf
 import random
+import numpy as np
 
 from model_data.model import u_net, eva_loss
-from utils.utils import tf_read_image
+from utils.utils import read_image
 
 
 class UNET:
@@ -12,8 +13,10 @@ class UNET:
         self.image_path = './data/train.txt'
         self.batch_size = 16
 
-        self.image_size = [80, 320]
-        self.label_size = 20
+        self.image_size = [80, 416]
+        # self.image_size = [80, 320]
+        self.label_size = 26
+        # self.label_size = 20
         self.epoch_num = 50
         self.learning_rate = 0.001
 
@@ -26,7 +29,7 @@ class UNET:
         self.num = 0  # the nth of line
         # load data
         with open(self.image_path) as f:
-            self.lines = f.readlines()[:300]
+            self.lines = f.readlines()
             split_num = int(self.val_split * len(self.lines))
             self.train_set = self.lines[split_num:]
             self.val_set = self.lines[:split_num]
@@ -45,14 +48,23 @@ class UNET:
             else:
                 pdata = train_set[self.num + i]
             img, label = pdata.split()
-            img_set.append("./data/picture/" + img + ".jpg")
-            label_set.append(list(map(eval, list(label))))
+            # label = "000"+label + "000"
+            img_data = read_image("./data/picture/" + img + ".jpg")
+            # img_set.append("./data/picture/" + img + ".jpg")
+            img_set.append(img_data)
+            label_data = list(map(eval, list(label)))
+            # label_data = [10 * i for i in label_data]
+            label_set.append(label_data)
         self.num += self.batch_size
+        img_set = np.stack(img_set, 0)
         return img_set, label_set
 
     def train(self):
         """train the net"""
-        x = tf.placeholder(tf.float32, [self.batch_size, 80, 320, 3])
+
+        # x = tf.placeholder(tf.float32, [self.batch_size, 80, 416, 3])
+        x = tf.placeholder(tf.float32, [self.batch_size, self.image_size[0], self.image_size[1], 3])
+        # path = tf.placeholder(tf.string)
         label = tf.placeholder(tf.float32, [self.batch_size, self.label_size])
         # global_step = tf.placeholder(tf.int32, shape=[1])
         # predict
@@ -77,7 +89,7 @@ class UNET:
         val_loss_summary = tf.summary.scalar("val_loss", loss)
         image_summary = tf.summary.image("image", x[0:2])
         mid_tensor = [[label[0, :], pred[0, :]], [label[1, :], pred[1, :]]]
-        mid_tensor = tf.reshape(mid_tensor, (-1, 20))
+        mid_tensor = tf.reshape(mid_tensor, (-1, self.label_size))
         label_summary = tf.summary.text("lableVSpred", tf.as_string(mid_tensor, 3))
         # pred_summary = tf.summary.text("pred", tf.as_string(pred[0:2, :], 3))
 
@@ -91,7 +103,7 @@ class UNET:
             for j in range(batch_train):
                 train_set, train_label = self.load_data(train_set=self.train_set)
                 # label_set = tf.Variable(label_set,False)
-                train_set = tf_read_image(train_set, sess=self.sess)
+                # train_set = read_image(train_set)
                 pred_, loss_, _, train_loss_summ = self.sess.run(
                     [pred, loss, op, train_loss_summary],
                     feed_dict={x: train_set, label: train_label})
@@ -103,7 +115,7 @@ class UNET:
             val_sum_loss = 0
             for j in range(batch_val):
                 val_set, val_label = self.load_data(train_set=self.val_set)
-                val_set = tf_read_image(val_set, sess=self.sess)
+                # val_set = tf_read_image(val_set, sess=self.sess)
                 val_loss, val_loss_summ, image_summ, label_summ, pred_ = self.sess.run(
                     [loss, val_loss_summary, image_summary, label_summary, pred],
                     feed_dict={x: val_set, label: val_label})
@@ -116,10 +128,10 @@ class UNET:
             writer.add_summary(label_summ, i)
             # writer.add_summary(pred_summ, i)
 
-            if i % 3 == 2:  # save model every 3 epochs
+            if i % 5 == 4:  # save model every 3 epochs
                 saver.save(self.sess,
-                           "./model/epoch{2}_train_loss{0:.3f}_val_loss{1:.3f}".format(loss_,
-                                                                                       val_sum_loss / batch_val, i))
+                           "./model/epoch{2}_train_loss{0:.3f}_val_loss{1:.3f}".format(loss_, val_sum_loss / batch_val,
+                                                                                       i))
 
 
 if __name__ == '__main__':
