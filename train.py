@@ -86,6 +86,7 @@ class UnetTrainer:
 
         saver = tf.train.Saver()
 
+        date = time.strftime("%m-%d-%H-%M")
         writer = tf.summary.FileWriter("logs/", self.sess.graph)
         train_loss_summary = tf.summary.scalar("train_loss", loss)
         val_loss_summary = tf.summary.scalar("val_loss", loss)

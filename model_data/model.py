@@ -100,10 +100,13 @@ def u_net(input_data):
                        use_bias=False)  # shape = batch_size * 80 * 416 *
 
     with tf.name_scope("head"):
-        x = conv_block(x, filters_unm=32, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*40*？*16
-        x = conv_block(x, filters_unm=64, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*20*？*32
-        x = conv_block(x, filters_unm=128, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*10*？*64
-        x = conv_block(x, filters_unm=256, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*5*？*128
+        # x = conv_block(x, filters_unm=32, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*40*？*
+        x = conv_block(x, filters_unm=64, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*20*？*
+        x = conv_block(x, filters_unm=128, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*20*？*
+        # x = conv_block(x, filters_unm=128, kernels=(3, 3), strides=(2, 2), use_bias=True)  # batch_size*10*？*
+        x = conv_block(x, filters_unm=256, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*5*？*
+        x = conv_block(x, filters_unm=512, kernels=(3, 3), strides=(2, 2), use_bias=False)  # batch_size*5*？*
+        x = conv_block(x, filters_unm=1024, kernels=(3, 3), strides=(1, 1), use_bias=True)  # batch_size*5*？*
         x = tf.concat([final, x], 3)  # batch_size*5*？*(256+512)
 
     with tf.name_scope("fc"):
@@ -119,10 +122,17 @@ def u_net(input_data):
 def eva_loss(label, predict):
     """eval loss"""
     # predict = tf.
-    loss = tf.losses.mean_squared_error(labels=label, predictions=predict)
+    # loss = tf.losses.mean_squared_error(labels=label, predictions=predict)
+    loss = tf.reduce_mean(tf.square(predict-label))
     all_vars = tf.trainable_variables()
     loss_l2 = tf.add_n([tf.nn.l2_loss(v) for v in all_vars
                         if 'bias' not in v.name]) * 0.001
     loss_sum = loss + loss_l2
+
+    ones = tf.ones_like(predict)
+    zeros = tf.zeros_like(predict)
+    pred = tf.where(predict < 0.3, zeros, ones)
+    loss_int = tf.reduce_mean(tf.square(pred-label))
+
     # loss_sum = loss
-    return loss_sum
+    return loss_sum + loss_int

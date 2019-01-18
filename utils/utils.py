@@ -25,16 +25,16 @@ def read_image(image_path, hue=.1, sat=1.5, val=1.5):
 
     # distort image
     x = rgb_to_hsv(image_raw_data)
-    hue = rand(-hue, hue)
-    sat = rand(1, sat) if rand() < .5 else 1 / rand(1, sat)
-    val = rand(1, val) if rand() < .5 else 1 / rand(1, val)
-    x[..., 0] += hue
-    x[..., 0][x[..., 0] > 1] -= 1
-    x[..., 0][x[..., 0] < 0] += 1
-    x[..., 1] *= sat
-    x[..., 2] *= val
-    x[x > 1] = 1
-    x[x < 0] = 0
+    # hue = rand(-hue, hue)
+    # sat = rand(1, sat) if rand() < .5 else 1 / rand(1, sat)
+    # val = rand(1, val) if rand() < .5 else 1 / rand(1, val)
+    # x[..., 0] += hue
+    # x[..., 0][x[..., 0] > 1] -= 1
+    # x[..., 0][x[..., 0] < 0] += 1
+    # x[..., 1] *= sat
+    # x[..., 2] *= val
+    # x[x > 1] = 1
+    # x[x < 0] = 0
 
     image_data = hsv_to_rgb(x)  # RGB
 

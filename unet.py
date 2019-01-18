@@ -40,8 +40,8 @@ class Unet:
 
             y = self.sess.run(pred, feed_dict={self.x: input_data})
             y = np.reshape(y, -1)
-            y[y >= 0.5] = 1
-            y[y <= 0.5] = 0
+            y[y >= 0.3] = 1
+            y[y <= 0.3] = 0
             print("the prediction is:")
             print(y[3:-3])
 
